@@ -75,12 +75,11 @@ public class Sink implements Behaviour<DataWithAnalytics> {
     }
 
     public void prepareAndSendData(List<DataWithAnalytics> recordsToSend) throws DeadException {
-        // set up records that will be sent via network
-        HashMap<String, Object> tweetRecord = new HashMap<>();
-        HashMap<String, Object> userRecord = new HashMap<>();
-
         // form transmittable record for each found piece of data
         for (DataWithAnalytics currentRecord : recordsToSend) {
+            HashMap<String, Object> tweetRecord = new HashMap<>();
+            HashMap<String, Object> userRecord = new HashMap<>();
+
             tweetRecord.put(CustomStringTopic.TOPIC, CustomStringTopic.TWEET);
             tweetRecord.put(CustomSubtopic.ID, currentRecord.getId());
             tweetRecord.put(CustomSubtopic.TWEET_TEXT, currentRecord.getTweet());
@@ -93,9 +92,6 @@ public class Sink implements Behaviour<DataWithAnalytics> {
             userRecord.put(CustomSubtopic.USERNAME, currentRecord.getUser());
             userRecord.put(CustomSubtopic.USER_RATIO, currentRecord.getUserRatio());
             Supervisor.sendMessage("TcpClient", userRecord);
-
-            tweetRecord.clear();
-            userRecord.clear();
         }
     }
 }

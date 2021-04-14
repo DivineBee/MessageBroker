@@ -6,12 +6,13 @@ import tcp.TcpServer;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**\
+/**
  *  Class that is responsible for work of pub/sub connection principle.
  *  Sub connects to the server, requesting for list of topics. This sub is registered conform topics that it requested.
  * When there is new message from publisher, broker checks topic of message and sends it to all subscribers that
@@ -37,47 +38,59 @@ public class MessageBroker {
          */
         @Override
         public boolean onReceive(Actor<Socket> self, Socket msg) throws Exception {
+            try {
             while(true) {
-                //  set stream for input from client
-                ObjectInputStream objectInputStream = new ObjectInputStream(msg.getInputStream());
+                    //  set stream for input from client
+                    ObjectInputStream objectInputStream = new ObjectInputStream(msg.getInputStream());
 
-                //  transform obtained data to processable object
-                Map<String, Object> incomingData = (Map<String, Object>) objectInputStream.readObject();
-                System.out.println(incomingData.get(CustomStringTopic.TOPIC) + incomingData.toString());
+                    //  transform obtained data to processable object
+                    Map<String, Object> incomingData = (Map<String, Object>) objectInputStream.readObject();
 
-                //  if client ends messaging, kill his actor
-                if(incomingData.get("topic").equals(CustomStringTopic.END_OF_MESSAGING)) {
-                    self.die();
-                    return false;
-                }
+                    if (incomingData == null || incomingData.isEmpty())
+                        System.err.println("empty message was received");
+                    else {
+                        //  if client ends messaging, kill his actor
+                        if(incomingData.get("topic").equals(CustomStringTopic.END_OF_MESSAGING)) {
+                            self.die();
+                            return false;
+                        }
 
-                //  if this is new subscriber, then add actor for him and set to which topics he is subscribing
-                if(incomingData.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.SUBSCRIBING)) {
-                    List<String> themesList = getListFromObj(incomingData.get(CustomStringTopic.TOPICS_TO_SUB));
+                        //  if this is new subscriber, then add actor for him and set to which topics he is subscribing
+                        if(incomingData.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.SUBSCRIBING)) {
+                            List<String> themesList = getListFromObj(incomingData.get(CustomStringTopic.TOPICS_TO_SUB));
 
-                    //  if there is no such theme yet, create one for sub and wait for info to come
-                    for (String theme : themesList) {
-                        if (!subscribersToTopics.containsKey(theme))
-                            subscribersToTopics.put(theme, new ArrayList<>());
-                        subscribersToTopics.get(theme).add((Integer) incomingData.get("port"));
+                            //  if there is no such theme yet, create one for sub and wait for info to come
+                            for (String theme : themesList) {
+                                if (!subscribersToTopics.containsKey(theme))
+                                    subscribersToTopics.put(theme, new ArrayList<>());
+                                subscribersToTopics.get(theme).add((Integer) incomingData.get("port"));
+                            }
+
+                            //  establish connection for sending data to sub
+                            TcpClient tcpClient = new TcpClient((String) incomingData.get(CustomStringTopic.IP), (Integer) incomingData.get("port"));
+                            ActorFactory.createActor("TcpClient_" + incomingData.get("port"), tcpClient.getClientBehaviour());
+
+                            return false;
+                        }
+
+                        if(incomingData.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.PUBLISHING))
+                            for (String theme : getListFromObj(incomingData.get(CustomStringTopic.TOPIC_TO_PUBLISH)))
+                                if (!subscribersToTopics.containsKey(theme))
+                                    subscribersToTopics.put(theme, new ArrayList<>());
+
+                        //  publish message to all submitted for this topic subscribers
+                        if (incomingData.get(CustomStringTopic.TOPIC) != null) {
+                            List<Integer> listOfSubs = subscribersToTopics.get(incomingData.get(CustomStringTopic.TOPIC));
+                            publish(listOfSubs, incomingData);
+                        } else {
+                            System.err.println("Message has no topic attached");
+                        }
                     }
-
-                    //  establish connection for sending data to sub
-                    TcpClient tcpClient = new TcpClient("127.0.0.1", (Integer) incomingData.get("port"));
-                    ActorFactory.createActor("TcpClient_" + incomingData.get("port"), tcpClient.getClientBehaviour());
-
-                    return false;
                 }
-
-                if(incomingData.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.PUBLISHING))
-                    for (String theme : getListFromObj(incomingData.get(CustomStringTopic.TOPIC_TO_PUBLISH)))
-                        if (!subscribersToTopics.containsKey(theme))
-                            subscribersToTopics.put((String) incomingData.get(CustomStringTopic.TOPIC_TO_PUBLISH), new ArrayList<>());
-
-                //  publish message to all submitted for this topic subscribers
-                List<Integer> listOfSubs = subscribersToTopics.get(incomingData.get(CustomStringTopic.TOPIC));
-                publish(listOfSubs, incomingData);
+            } catch (SocketException e) {
+                System.err.println("Disconnected");
             }
+            return true;
         }
 
         //  restart actor if error was thrown

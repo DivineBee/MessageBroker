@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketException;
 
 // client-side connection module (sends requests to the server)
 public class TcpClient {
@@ -42,8 +43,13 @@ public class TcpClient {
             @Override
             public boolean onReceive(Actor<Object> self, Object msg) throws Exception {
                 //  set output stream and send message as java-object
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-                objectOutputStream.writeObject(msg);
+                try {
+                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+                    objectOutputStream.writeObject(msg);
+                } catch (SocketException e) {
+                    System.err.println("Subscriber disconnected");
+                    return false;
+                }
 
                 return true;
             }

@@ -19,13 +19,16 @@ import java.util.Map;
  * @project MessageBroker
  */
 public class ClassicSubscriber {
+    private static int subPort = 3002;
+    private static String subIP = "127.0.0.1";
+
     //  Behaviour of joining messages and recording incomplete ones for their further finishing
     private static Behaviour<Socket> messageExtractorBehaviour = new Behaviour<Socket>() {
         @Override
         public boolean onReceive(Actor<Socket> self, Socket msg) throws Exception {
             HashMap<String, Object> currentRecord = new HashMap<>();
-            while (true) {
-                try {
+            try {
+                while (true) {
                     // receive input stream coming from broker
                     ObjectInputStream objectInputStream = new ObjectInputStream(msg.getInputStream());
 
@@ -50,10 +53,11 @@ public class ClassicSubscriber {
                         System.out.println(currentRecord);
 
                     currentRecord.clear();
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
+            } catch (IOException e) {
+                System.err.println("Message Broker not responding...");
             }
+            return true;
         }
 
         @Override
@@ -69,7 +73,7 @@ public class ClassicSubscriber {
         ActorFactory.createActor("TcpClient", tcpClient.getClientBehaviour());
 
         // inform broker where to send data
-        handShake(3002);
+        handShake();
 
         // define port that will listen for incoming requests and messages from broker
         TcpServer tcpServer = new TcpServer(3002);
@@ -102,16 +106,20 @@ public class ClassicSubscriber {
     /**
      * handshake with message broker, setting topics to which client wants to sub
      */
-    private static void handShake(int clientPort) throws DeadException {
+    private static void handShake() throws DeadException {
+        // initialize handshake message that will inform about to which topics is required subscription
         HashMap<String, Object> messageToSend = new HashMap<>();
         messageToSend.put(CustomStringTopic.TOPIC, CustomStringTopic.SUBSCRIBING);
 
+        // here sub wants to get tweet and user data
         ArrayList<String> topicsList = new ArrayList<>();
         topicsList.add(CustomStringTopic.TWEET);
         topicsList.add(CustomStringTopic.USER);
         messageToSend.put(CustomStringTopic.TOPICS_TO_SUB, topicsList);
 
-        messageToSend.put(CustomStringTopic.PORT, clientPort);
+        // inform broker about port where to send data
+        messageToSend.put(CustomStringTopic.PORT, subPort);
+        messageToSend.put(CustomStringTopic.IP, subIP);
         Supervisor.sendMessage("TcpClient", messageToSend);
     }
 

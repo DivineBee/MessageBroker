@@ -29,21 +29,17 @@ public class MongoUtility {
     }
 
     // Establish connection to collection of database
-    public MongoCollection<Document> establishConnectionToCollection(String collectionName) {
+    public void establishConnectionToCollection(String collectionName) {
         collection = database.getCollection(collectionName);
-        return collection;
     }
 
     // Update elements if are present or insert if there are no such records in db
     public void insertDataToDB(List<DataWithAnalytics> dataRecords) throws Exception {
-        int size = dataRecords.size();
-
-        if (size > 0) {
+        if (dataRecords.size() > 0) {
             // establish connection to the tweets collection which will contain
             // id, tweet, emotion ratio and score. Then insert it to collection
             establishConnectionToCollection("tweets");
-            for (int i = 0; i < size; i++) {
-                DataWithAnalytics currentRecord = dataRecords.get(i);
+            for (DataWithAnalytics currentRecord : dataRecords) {
                 Document tweetDoc = new Document();
                 tweetDoc.put("id", currentRecord.getId());
                 tweetDoc.put("tweet", currentRecord.getTweet());
@@ -54,16 +50,14 @@ public class MongoUtility {
             // establish connection to the users collection which will contain
             // id, user, user ratio and then insert it to collection
             establishConnectionToCollection("users");
-            for (int i = 0; i < size; i++) {
-                DataWithAnalytics currentRecord = dataRecords.get(i);
+            for (DataWithAnalytics currentRecord : dataRecords) {
                 Document userDoc = new Document();
                 userDoc.put("id", currentRecord.getId());
                 userDoc.put("user", currentRecord.getUser());
                 userDoc.put("userRatio", currentRecord.getUserRatio());
                 collection.insertOne(userDoc);
             }
-        } else {
+        } else
             throw new Exception("empty list sent to collection");
-        }
     }
 }

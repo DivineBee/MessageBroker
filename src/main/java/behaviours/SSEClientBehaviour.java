@@ -41,6 +41,8 @@ public class SSEClientBehaviour implements Behaviour<String> {
                     ActorFactory.createActor("jsonHandler", jsonBehaviour);
                     Supervisor.sendMessage("jsonHandler", data);
                 }
+
+
             });
             client.connect();
             self.sleepActor();

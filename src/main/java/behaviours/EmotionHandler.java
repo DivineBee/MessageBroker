@@ -27,6 +27,7 @@ public class EmotionHandler implements Behaviour<DataWithId> {
     public static String[] emotionWordsArray = null;
 
     public EmotionHandler(String pathToEmotionDbFile) throws IOException {
+        //
         String line;
         BufferedReader reader = new BufferedReader(new FileReader(pathToEmotionDbFile));
 
@@ -43,8 +44,8 @@ public class EmotionHandler implements Behaviour<DataWithId> {
             if (parts.length == 2)
                 emotionsMap.put(parts[0], Integer.parseInt(parts[1]));
 
-                // if more than 2 items then concatenate all the items except last one
-                // and add whitespace back
+            // if more than 2 items then concatenate all the items except last one
+            // and add whitespace back
             else if (parts.length >= 3) {
                 String key = "";
                 for (int i = 0; i < parts.length - 1; i++)
@@ -72,6 +73,7 @@ public class EmotionHandler implements Behaviour<DataWithId> {
         //  emotion score
         int score = 0;
 
+        // transform tweet to lower case for analysis
         String lowerCaseTweet = tweet.toLowerCase();
 
         for (String word : emotionWordsArray)
@@ -96,10 +98,13 @@ public class EmotionHandler implements Behaviour<DataWithId> {
         return score;
     }
 
+    // finds how many time emotion word has appeared in text
     public static int amountOfEmotionWordAppearancesInTweet(String tweet, String emotionWord) {
+        // init fragment for taking emotion words and count their appearances in text
         String reviewableFragment = "";
         int counter = 0;
 
+        // find word appearances by array-like detection through String
         for (int startIndex = 0; startIndex < tweet.length() - emotionWord.length(); startIndex++) {
             int endingIndex = startIndex + emotionWord.length();
             if (startIndex != 0 && endingIndex != tweet.length())
@@ -120,6 +125,7 @@ public class EmotionHandler implements Behaviour<DataWithId> {
         return counter;
     }
 
+    // true if word is limited by shown starting and ending characters, false if not
     public static boolean verifyWordBounds(char start, char end) {
         if (start == ' ' || start == '.' || start == ',' || start == '!' || start == '?' || start == ';' || start == '#')
             return end == ' ' || end == '.' || end == ',' || end == '!' || end == '?' || end == ';';
@@ -127,6 +133,7 @@ public class EmotionHandler implements Behaviour<DataWithId> {
         return false;
     }
 
+    // true if bound has one of the shown characters, false if not
     public static boolean verifyWordOneWayBound(char bound) {
         return bound == ' ' || bound == '.' || bound == ',' || bound == '!' || bound == '?' || bound == ';';
     }

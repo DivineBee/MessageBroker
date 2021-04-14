@@ -7,6 +7,7 @@ public class CustomStringTopic {
     public static final String PUBLISHING = "publishing";
     public static final String TOPIC_TO_PUBLISH = "topic_for_publishing";
     public static final String PORT = "port";
+    public static final String IP = "ip";
 
     public static final String TOPIC = "topic";
     public static final String TWEET = "tweet";

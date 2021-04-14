@@ -1,6 +1,8 @@
 package work;
 
+import actor.model.ActorFactory;
 import actor.model.DeadException;
+import actor.model.Supervisor;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -42,34 +44,41 @@ public class SSEClient {
     void readEvent(InputStream in) throws IOException, DeadException {
         String eventType = "message";
         StringBuilder payLoad = new StringBuilder();
+            while (readEvent) {
+                StringBuilder sb = new StringBuilder();
+                while (!isEol(sb)) {
+                    int read;
+                    try {
+                        if ((read = in.read()) != -1) {
+                            char c = (char) read;
+                            sb.append(c);
+                        }
+                    } catch (IOException e){
+                        System.err.println(e);
+                    }
+                }
 
-        while (readEvent) {
-            StringBuilder sb = new StringBuilder();
-            while (!isEol(sb)) {
-                int red = in.read();
-                if (red == -1)
-                    throw new EOFException("end of stream");
-                char c = (char) red;
-                sb.append(c);
+                String line = sb.toString();
+
+                if (line.startsWith(":"))
+                    continue;
+
+                if (line.startsWith("data: ")) {
+                    payLoad.append(line.substring(6));
+                    continue;
+                }
+                if (line.startsWith("event: ")) {
+                    eventType = line.substring(7);
+                    continue;
+                }
+                if ("\n".equals(line) || "\r\n".equals(line))
+                    break;
+
+                System.out.println("line = " + line + "<");
+                sb.setLength(0); //clears string builder
             }
 
-            String line = sb.toString();
-            if (line.startsWith(":"))
-                continue;
 
-            if (line.startsWith("data: ")) {
-                payLoad.append(line.substring(6));
-                continue;
-            }
-            if (line.startsWith("event: ")) {
-                eventType = line.substring(7);
-                continue;
-            }
-            if ("\n".equals(line) || "\r\n".equals(line))
-                break;
-
-            System.out.println("line = " + line + "<");
-        }
 
         SSEEvent evt = new SSEEvent();
         evt.type = eventType;
