@@ -23,7 +23,7 @@ public class Supervisor {
     // Try sending message to actor and check message to be received
     public static boolean sendMessage(String idReceiver, Object message) throws DeadException {
         //sleepActor();
-        Actor<Object> receiver = actorPool.get(idReceiver);
+        Actor receiver = actorPool.get(idReceiver);
 
         if (receiver == null)
             System.err.println("Don't have this actor --> " + idReceiver);

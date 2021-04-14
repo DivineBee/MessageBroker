@@ -40,13 +40,12 @@ public class EmotionHandler implements Behaviour<DataWithId> {
 
             // if there are only 2 items then first is key and second is value
             // and attach them to map
-            if (parts.length == 2) {
-                // put key and value in map
+            if (parts.length == 2)
                 emotionsMap.put(parts[0], Integer.parseInt(parts[1]));
 
                 // if more than 2 items then concatenate all the items except last one
                 // and add whitespace back
-            } else if (parts.length >= 3) {
+            else if (parts.length >= 3) {
                 String key = "";
                 for (int i = 0; i < parts.length - 1; i++)
                     if (key.isEmpty())
@@ -75,9 +74,9 @@ public class EmotionHandler implements Behaviour<DataWithId> {
 
         String lowerCaseTweet = tweet.toLowerCase();
 
-        for (int i = 0; i < emotionWordsArray.length; i++)
-            if (lowerCaseTweet.contains(emotionWordsArray[i]))
-                score += amountOfEmotionWordAppearancesInTweet(tweet, emotionWordsArray[i]) * emotionsMap.get(emotionWordsArray[i]);
+        for (String word : emotionWordsArray)
+            if (lowerCaseTweet.contains(word))
+                score += amountOfEmotionWordAppearancesInTweet(tweet, word) * emotionsMap.get(word);
 
         if (score < 0)
             if (score > -3)

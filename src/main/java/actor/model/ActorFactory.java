@@ -22,7 +22,6 @@ public class ActorFactory {
 
     // creates actor and save it in system with its name and behaviour
     public static void createActor(String idActor, Behaviour behavior) {
-        Actor actor = new Actor(idActor, behavior);
-        actorPool.put(idActor, actor);
+        actorPool.put(idActor, new Actor(idActor, behavior));
     }
 }

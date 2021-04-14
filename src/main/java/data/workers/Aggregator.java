@@ -18,9 +18,8 @@ public class Aggregator implements Behaviour<DataWithAnalytics> {
     HashMap<UUID, DataWithAnalytics> localHashMap;
 
     // constructor
-    public Aggregator() throws Exception {
+    public Aggregator() {
         localHashMap = new HashMap<>();
-        DataWithAnalytics.class.getClass();
     }
 
     // Aggregator receives and then combines all the fragments which arrive together and merge them in one chunk
@@ -38,8 +37,9 @@ public class Aggregator implements Behaviour<DataWithAnalytics> {
             // then check the data for integrity, if it passes the check then it can be sent
             // to the sink and removed from local map
             if (record.checkForIntegrity()) {
-                Supervisor.sendMessage("sink", record);
-                localHashMap.remove(record);
+//                Supervisor.sendMessage("sink", record);
+//                localHashMap.remove(record);
+                Supervisor.sendMessage("sink", localHashMap.remove(record));
             }
         } else {
             // else just create new record and place new incoming data

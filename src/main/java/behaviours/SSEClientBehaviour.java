@@ -37,7 +37,7 @@ public class SSEClientBehaviour implements Behaviour<String> {
                 }
                 // if the data is available and readable then create new actor which will
                 // do next steps and will process the data from the stream
-                if (data != null && !data.isEmpty()) {
+                if (!data.isEmpty()) {
                     ActorFactory.createActor("jsonHandler", jsonBehaviour);
                     Supervisor.sendMessage("jsonHandler", data);
                 }

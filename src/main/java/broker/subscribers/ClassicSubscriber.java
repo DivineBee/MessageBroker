@@ -1,10 +1,17 @@
 package broker.subscribers;
 
-import actor.model.Actor;
-import actor.model.Behaviour;
+import actor.model.*;
 import broker.CustomStringTopic;
 import broker.CustomSubtopic;
+import tcp.TcpClient;
+import tcp.TcpServer;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.net.Socket;
+import java.util.Map;
 
 /**
  * @author Beatrice V.
@@ -12,35 +19,100 @@ import java.util.HashMap;
  * @project MessageBroker
  */
 public class ClassicSubscriber {
-
     //  Behaviour of joining messages and recording incomplete ones for their further finishing
-    private static Behaviour<HashMap<String, Object>> messageExtracterBehaviour = new Behaviour<HashMap<String, Object>>() {
+    private static Behaviour<Socket> messageExtractorBehaviour = new Behaviour<Socket>() {
         @Override
-        public boolean onReceive(Actor<HashMap<String, Object>> self, HashMap<String, Object> msg) throws Exception {
+        public boolean onReceive(Actor<Socket> self, Socket msg) throws Exception {
             HashMap<String, Object> currentRecord = new HashMap<>();
+            while (true) {
+                try {
+                    // receive input stream coming from broker
+                    ObjectInputStream objectInputStream = new ObjectInputStream(msg.getInputStream());
 
-            if (msg.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.TWEET)) {
-                currentRecord.put(CustomSubtopic.ID, msg.get(CustomSubtopic.ID));
-                currentRecord.put(CustomSubtopic.TWEET_TEXT, msg.get(CustomSubtopic.TWEET_TEXT));
-                currentRecord.put(CustomSubtopic.EMOTION_RATIO, msg.get(CustomSubtopic.EMOTION_RATIO));
-                currentRecord.put(CustomSubtopic.EMOTION_SCORE, msg.get(CustomSubtopic.EMOTION_SCORE));
-            } else if (msg.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.USER)) {
-                currentRecord.put(CustomSubtopic.ID, msg.get(CustomSubtopic.ID));
-                currentRecord.put(CustomSubtopic.USERNAME, msg.get(CustomSubtopic.USERNAME));
-                currentRecord.put(CustomSubtopic.USER_RATIO, msg.get(CustomSubtopic.USER_RATIO));
+                    // read incoming data as message (object) of specific type
+                    Map<String, Object> incomingMessage = (Map<String, Object>) objectInputStream.readObject();
+
+                    // get record with info about tweet
+                    if (incomingMessage.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.TWEET)) {
+                        currentRecord.put(CustomSubtopic.ID, incomingMessage.get(CustomSubtopic.ID));
+                        currentRecord.put(CustomSubtopic.TWEET_TEXT, incomingMessage.get(CustomSubtopic.TWEET_TEXT));
+                        currentRecord.put(CustomSubtopic.EMOTION_RATIO, incomingMessage.get(CustomSubtopic.EMOTION_RATIO));
+                        currentRecord.put(CustomSubtopic.EMOTION_SCORE, incomingMessage.get(CustomSubtopic.EMOTION_SCORE));
+                        // get record with info about user
+                    } else if (incomingMessage.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.USER)) {
+                        currentRecord.put(CustomSubtopic.ID, incomingMessage.get(CustomSubtopic.ID));
+                        currentRecord.put(CustomSubtopic.USERNAME, incomingMessage.get(CustomSubtopic.USERNAME));
+                        currentRecord.put(CustomSubtopic.USER_RATIO, incomingMessage.get(CustomSubtopic.USER_RATIO));
+                    }
+
+                    //  show record if there is value
+                    if (!currentRecord.isEmpty())
+                        System.out.println(currentRecord);
+
+                    currentRecord.clear();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-
-            if (!currentRecord.isEmpty())
-                System.out.println(currentRecord);
-
-            return true;
         }
 
         @Override
-        public void onException(Actor<HashMap<String, Object>> self, Exception e) {
+        public void onException(Actor<Socket> self, Exception e) {
             e.printStackTrace();
             self.die();
         }
     };
+
+    public static void main(String[] args) throws IOException, DeadException {
+        // init client that will send request for connection
+        TcpClient tcpClient = new TcpClient("127.0.0.1", 3000);
+        ActorFactory.createActor("TcpClient", tcpClient.getClientBehaviour());
+
+        // inform broker where to send data
+        handShake(3002);
+
+        // define port that will listen for incoming requests and messages from broker
+        TcpServer tcpServer = new TcpServer(3002);
+        Socket socket = null;
+
+        // perform subscription
+        subscribe(socket, tcpServer);
+    }
+
+    /**
+     * subscriber to the server
+     * @param socket connection to server for receiving data
+     * @param tcpServer protocol for receiving data
+     */
+    private static void subscribe(Socket socket, TcpServer tcpServer) throws DeadException {
+        while(true) {
+            // catch new connection
+            try {
+                socket = tcpServer.getServerSocket().accept();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            // append received connection to the listener
+            ActorFactory.createActor("TcpServer", messageExtractorBehaviour);
+            Supervisor.sendMessage("TcpServer", socket);
+        }
+    }
+
+    /**
+     * handshake with message broker, setting topics to which client wants to sub
+     */
+    private static void handShake(int clientPort) throws DeadException {
+        HashMap<String, Object> messageToSend = new HashMap<>();
+        messageToSend.put(CustomStringTopic.TOPIC, CustomStringTopic.SUBSCRIBING);
+
+        ArrayList<String> topicsList = new ArrayList<>();
+        topicsList.add(CustomStringTopic.TWEET);
+        topicsList.add(CustomStringTopic.USER);
+        messageToSend.put(CustomStringTopic.TOPICS_TO_SUB, topicsList);
+
+        messageToSend.put(CustomStringTopic.PORT, clientPort);
+        Supervisor.sendMessage("TcpClient", messageToSend);
+    }
 
 }

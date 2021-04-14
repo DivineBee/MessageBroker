@@ -36,7 +36,7 @@ public class JSONBehaviour implements Behaviour<String> {
         }
 
         // if the data is not null and is not localhost then parse and extract needed fields
-        if (!data.contains("localhost") && data != null && !data.isEmpty()) {
+        if (!data.contains("localhost") && !data.isEmpty()) {
             // read data and assign to jsonNode
             JsonNode jsonNode = jsonMapper.readValue(data, JsonNode.class);
             JsonNode commonPrefix = jsonNode.get("message").get("tweet");
@@ -73,9 +73,7 @@ public class JSONBehaviour implements Behaviour<String> {
             // any additional processing
             DataWithAnalytics transmittableFragment = new DataWithAnalytics();
             transmittableFragment.setId(dataWithId.getId());
-            // set the tweet which will be transmitted
             transmittableFragment.setTweet(dataWithId.getTweet());
-            // set the user which will be transmitted
             transmittableFragment.setUser(dataWithId.getUser());
 
             // send the composed fragment to aggregator

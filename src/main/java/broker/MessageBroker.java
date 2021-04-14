@@ -39,12 +39,11 @@ public class MessageBroker {
         public boolean onReceive(Actor<Socket> self, Socket msg) throws Exception {
             while(true) {
                 //  set stream for input from client
-                InputStream inputStream = msg.getInputStream();
-                ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+                ObjectInputStream objectInputStream = new ObjectInputStream(msg.getInputStream());
 
                 //  transform obtained data to processable object
                 Map<String, Object> incomingData = (Map<String, Object>) objectInputStream.readObject();
-                System.out.println(incomingData.get("topic") + incomingData.toString());
+                System.out.println(incomingData.get(CustomStringTopic.TOPIC) + incomingData.toString());
 
                 //  if client ends messaging, kill his actor
                 if(incomingData.get("topic").equals(CustomStringTopic.END_OF_MESSAGING)) {
@@ -53,8 +52,8 @@ public class MessageBroker {
                 }
 
                 //  if this is new subscriber, then add actor for him and set to which topics he is subscribing
-                if(incomingData.get("topic").equals(CustomStringTopic.SUBSCRIBING)) {
-                    List<String> themesList = getListFromObj(incomingData.get("topics_to_sub"));
+                if(incomingData.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.SUBSCRIBING)) {
+                    List<String> themesList = getListFromObj(incomingData.get(CustomStringTopic.TOPICS_TO_SUB));
 
                     //  if there is no such theme yet, create one for sub and wait for info to come
                     for (String theme : themesList) {
@@ -70,12 +69,13 @@ public class MessageBroker {
                     return false;
                 }
 
-                //  check if this topic is in list of topics, else add this one to topic list
-                if(!subscribersToTopics.containsKey(incomingData.get("topic")))
-                    subscribersToTopics.put((String) incomingData.get("topic"), new ArrayList<>());
+                if(incomingData.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.PUBLISHING))
+                    for (String theme : getListFromObj(incomingData.get(CustomStringTopic.TOPIC_TO_PUBLISH)))
+                        if (!subscribersToTopics.containsKey(theme))
+                            subscribersToTopics.put((String) incomingData.get(CustomStringTopic.TOPIC_TO_PUBLISH), new ArrayList<>());
 
                 //  publish message to all submitted for this topic subscribers
-                List<Integer> listOfSubs = subscribersToTopics.get(incomingData.get("topic"));
+                List<Integer> listOfSubs = subscribersToTopics.get(incomingData.get(CustomStringTopic.TOPIC));
                 publish(listOfSubs, incomingData);
             }
         }
