@@ -1,0 +1,31 @@
+version: "3.8"
+services:
+  mongodb:
+    container_name: mongodb
+    image: mongo
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+
+  rtpserver:
+    image: alexburlacu/rtp-server:faf18x
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://rtpserver:4000" ]
+      interval: 5s # 10s
+      timeout: 5s  # 10s
+      retries: 1  #2
+
+  message-broker:
+    container_name: message-broker
+    build: target/
+    depends_on:
+      - rtpserver
+    ports:
+      - "5000:5000"
+
+
+   
