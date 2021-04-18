@@ -10,10 +10,10 @@ import java.net.SocketException;
 import java.util.*;
 
 /**
- * Class that is responsible for work of pub/sub connection principle.
- * Sub connects to the server, requesting for list of topics. This sub is registered conform topics that it requested.
+ * Class that is responsible for work of pub/subscriber connection principle.
+ * Sub connects to the server, requesting for list of topics. This subscriber is registered conform topics that it requested.
  * When there is new message from publisher, broker checks topic of message and sends it to all subscribers that
- * requested for this topic. If there is not such topic, then sub waits until messages with such topic will appear.
+ * requested for this topic. If there is not such topic, then subscriber waits until messages with such topic will appear.
  * Pub connects to the server, showing that it wants to publish messages. Broker opens stream for him and waits for
  * them. When broker receives message, he checks topic of the message and sends it to all subs for this topic.
  */
@@ -22,7 +22,7 @@ public class MessageBroker {
     private static int currentAvailableActor = 1;
 
     //  list of all subscribers with topics to which they are subscribed
-    private static final HashMap<String, List<Integer>> subscribersToTopics = new HashMap<>();
+    private static final HashMap<String, List<Integer>> topicsSubscribers = new HashMap<>();
 
     //Queue for each topic of durable queues
     Queue<Map<String, Object>> tweetQueue = new PriorityQueue<>();
@@ -37,7 +37,7 @@ public class MessageBroker {
         TcpServer tcpServer = new TcpServer(3000);
         Socket socket = null;
 
-        //  append all new sockets to new actors and wait for data as sub
+        //  append all new sockets to new actors and wait for data as subscriber
         subscribe(socket, tcpServer);
     }
 
@@ -73,14 +73,14 @@ public class MessageBroker {
                         if (incomingData.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.SUBSCRIBING)) {
                             List<String> topicList = getListFromObj(incomingData.get(CustomStringTopic.TOPICS_TO_SUB));
 
-                            //  if there is no such topic yet, create one for sub and wait for info to come
+                            //  if there is no such topic yet, create one for subscriber and wait for info to come
                             for (String topic : topicList) {
-                                if (!subscribersToTopics.containsKey(topic))
-                                    subscribersToTopics.put(topic, new ArrayList<>());
-                                subscribersToTopics.get(topic).add((Integer) incomingData.get("port"));
+                                if (!topicsSubscribers.containsKey(topic))
+                                    topicsSubscribers.put(topic, new ArrayList<>());
+                                topicsSubscribers.get(topic).add((Integer) incomingData.get("port"));
                             }
 
-                            //  establish connection for sending data to sub
+                            //  establish connection for sending data to subscriber
                             TcpClient tcpClient = new TcpClient((String) incomingData.get(CustomStringTopic.IP), (Integer) incomingData.get("port"));
                             ActorFactory.createActor("TcpClient_" + incomingData.get("port"), tcpClient.getClientBehaviour());
 
@@ -89,13 +89,13 @@ public class MessageBroker {
 
                         if (incomingData.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.PUBLISHING))
                             for (String topic : getListFromObj(incomingData.get(CustomStringTopic.TOPIC_TO_PUBLISH)))
-                                if (!subscribersToTopics.containsKey(topic))
-                                    subscribersToTopics.put(topic, new ArrayList<>());
+                                if (!topicsSubscribers.containsKey(topic))
+                                    topicsSubscribers.put(topic, new ArrayList<>());
 
                         //  publish message to all submitted for this topic subscribers
                         if (incomingData.get(CustomStringTopic.TOPIC) != null) {
-                            List<Integer> listOfSubs = subscribersToTopics.get(incomingData.get(CustomStringTopic.TOPIC));
-                            publish(listOfSubs, incomingData);
+                            List<Integer> subscribersList = topicsSubscribers.get(incomingData.get(CustomStringTopic.TOPIC));
+                            publish(subscribersList, incomingData);
                         } else {
                             System.err.println("Message has no topic attached");
                         }

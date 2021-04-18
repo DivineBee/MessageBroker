@@ -104,14 +104,14 @@ public class ClassicSubscriber {
     }
 
     /**
-     * handshake with message broker, setting topics to which client wants to sub
+     * handshake with message broker, setting topics to which client wants to subscriber
      */
     private static void handShake() throws DeadException {
         // initialize handshake message that will inform about to which topics is required subscription
         HashMap<String, Object> messageToSend = new HashMap<>();
         messageToSend.put(CustomStringTopic.TOPIC, CustomStringTopic.SUBSCRIBING);
 
-        // here sub wants to get tweet and user data
+        // here subscriber wants to get tweet and user data
         ArrayList<String> topicsList = new ArrayList<>();
         topicsList.add(CustomStringTopic.TWEET);
         topicsList.add(CustomStringTopic.USER);

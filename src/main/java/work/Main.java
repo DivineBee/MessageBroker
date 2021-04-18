@@ -52,7 +52,7 @@ public class Main {
     }
 
     /**
-     * handshake with message broker, setting topics to which client wants to sub
+     * handshake with message broker, setting topics to which client wants to subscriber
      */
     private static void handShake() throws DeadException {
         HashMap<String, Object> messageToSend = new HashMap<>();

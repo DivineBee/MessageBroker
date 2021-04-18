@@ -97,14 +97,14 @@ Next, the king of this laboratory work - Message Broker. This class is responsib
         if(incomingData.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.SUBSCRIBING)) {
             List<String> topicList = getListFromObj(incomingData.get(CustomStringTopic.TOPICS_TO_SUB));
 
-            //  if there is no such topic yet, create one for sub and wait for info to come
+            //  if there is no such topic yet, create one for subscriber and wait for info to come
             for (String topic : topicList) {
-                if (!subscribersToTopics.containsKey(topic))
-                    subscribersToTopics.put(topic, new ArrayList<>());
-                subscribersToTopics.get(topic).add((Integer) incomingData.get("port"));
+                if (!topicsSubscribers.containsKey(topic))
+                    topicsSubscribers.put(topic, new ArrayList<>());
+                topicsSubscribers.get(topic).add((Integer) incomingData.get("port"));
             }
 
-            //  establish connection for sending data to sub
+            //  establish connection for sending data to subscriber
             TcpClient tcpClient = new TcpClient((String) incomingData.get(CustomStringTopic.IP), (Integer) incomingData.get("port"));
             ActorFactory.createActor("TcpClient_" + incomingData.get("port"), tcpClient.getClientBehaviour());
 
@@ -113,19 +113,19 @@ Next, the king of this laboratory work - Message Broker. This class is responsib
 
         if(incomingData.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.PUBLISHING))
             for (String topic : getListFromObj(incomingData.get(CustomStringTopic.TOPIC_TO_PUBLISH)))
-                if (!subscribersToTopics.containsKey(topic))
-                    subscribersToTopics.put(topic, new ArrayList<>());
+                if (!topicsSubscribers.containsKey(topic))
+                    topicsSubscribers.put(topic, new ArrayList<>());
 
         //  publish message to all submitted for this topic subscribers
         if (incomingData.get(CustomStringTopic.TOPIC) != null) {
-            List<Integer> listOfSubs = subscribersToTopics.get(incomingData.get(CustomStringTopic.TOPIC));
-            publish(listOfSubs, incomingData);
+            List<Integer> subscribersList = topicsSubscribers.get(incomingData.get(CustomStringTopic.TOPIC));
+            publish(subscribersList, incomingData);
         } else {
             System.err.println("Message has no topic attached");
         }
                     * * *
 ```
-MessageBroker also has 2 helper classes - CustomStringTopic and CustomSubtopic. In the first one are the main available topics for communication with Broker. The second one is responsible for sub-topics where are the keys for extracting data from hashmap. So the first one is the topic itself, but the second one is for ease of use in using the hashmap keys.  
+MessageBroker also has 2 helper classes - CustomStringTopic and CustomSubtopic. In the first one are the main available topics for communication with Broker. The second one is responsible for subscriber-topics where are the keys for extracting data from hashmap. So the first one is the topic itself, but the second one is for ease of use in using the hashmap keys.  
 Now I will talk about why we need to have this broker at all - Publishers and Subscribers. In the role of the publisher I chose to be Sink, because it already has all the data beautifully batched together. Inside it I prepared a method which is responsible for sending data. So, here for each topic a separate map is made and the data is inserted to. Then this data is prepared and sent.  
 ```java
  public void prepareAndSendData(List<DataWithAnalytics> recordsToSend) throws DeadException {
