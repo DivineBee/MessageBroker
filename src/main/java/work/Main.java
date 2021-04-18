@@ -24,7 +24,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         // Section of initialization
         SSEClientBehaviour sseClientBehaviour = new SSEClientBehaviour();
-        EmotionHandler emotionHandler = new EmotionHandler("D:\\MessageBroker\\MessageBroker\\src\\main\\resources\\emotions.txt");
+        EmotionHandler emotionHandler = new EmotionHandler("D:\\downloads\\MessageBroker\\src\\main\\resources\\emotions.txt");
         TweetEngagementRatioBehaviour ratioBehaviour = new TweetEngagementRatioBehaviour();
         UserEngagementRatioBehaviour userRatioBehaviour = new UserEngagementRatioBehaviour();
         Aggregator aggregator = new Aggregator();

@@ -22,6 +22,22 @@ public class ClassicSubscriber {
     private static int subPort = 3002;
     private static String subIP = "127.0.0.1";
 
+    public static void main(String[] args) throws IOException, DeadException {
+        // init client that will send request for connection
+        TcpClient tcpClient = new TcpClient("127.0.0.1", 3000);
+        ActorFactory.createActor("TcpClient", tcpClient.getClientBehaviour());
+
+        // inform broker where to send data
+        handShake();
+
+        // define port that will listen for incoming requests and messages from broker
+        TcpServer tcpServer = new TcpServer(3002);
+        Socket socket = null;
+
+        // perform subscription
+        subscribe(socket, tcpServer);
+    }
+
     //  Behaviour of joining messages and recording incomplete ones for their further finishing
     private static Behaviour<Socket> messageExtractorBehaviour = new Behaviour<Socket>() {
         @Override
@@ -30,10 +46,10 @@ public class ClassicSubscriber {
             try {
                 while (true) {
                     // receive input stream coming from broker
-                    ObjectInputStream objectInputStream = new ObjectInputStream(msg.getInputStream());
+                    ObjectInputStream inputStream = new ObjectInputStream(msg.getInputStream());
 
                     // read incoming data as message (object) of specific type
-                    Map<String, Object> incomingMessage = (Map<String, Object>) objectInputStream.readObject();
+                    Map<String, Object> incomingMessage = (Map<String, Object>) inputStream.readObject();
 
                     // get record with info about tweet
                     if (incomingMessage.get(CustomStringTopic.TOPIC).equals(CustomStringTopic.TWEET)) {
@@ -66,22 +82,6 @@ public class ClassicSubscriber {
             self.die();
         }
     };
-
-    public static void main(String[] args) throws IOException, DeadException {
-        // init client that will send request for connection
-        TcpClient tcpClient = new TcpClient("127.0.0.1", 3000);
-        ActorFactory.createActor("TcpClient", tcpClient.getClientBehaviour());
-
-        // inform broker where to send data
-        handShake();
-
-        // define port that will listen for incoming requests and messages from broker
-        TcpServer tcpServer = new TcpServer(3002);
-        Socket socket = null;
-
-        // perform subscription
-        subscribe(socket, tcpServer);
-    }
 
     /**
      * subscriber to the server

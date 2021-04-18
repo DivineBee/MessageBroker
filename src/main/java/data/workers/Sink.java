@@ -35,7 +35,7 @@ public class Sink implements Behaviour<DataWithAnalytics> {
     // constructor which gets the required fields for establishing connection with db
     public Sink(String host, int port, String databaseName) {
         mongoUtility = new MongoUtility();
-        mongoUtility.establishConnectionToDB(host, port, databaseName);
+        mongoUtility.establishDatabaseConnection(host, port, databaseName);
     }
 
     // Inside on receive method the backpressure strategy is implemented
